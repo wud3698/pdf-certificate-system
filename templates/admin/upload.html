@@ -1,0 +1,217 @@
+{% extends "admin/base.html" %}
+
+{% block title %}上传获奖数据 - 后台管理系统{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <i class="fas fa-cloud-upload-alt text-primary me-2"></i>
+    上传获奖数据
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/upload.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1>上传获奖数据</h1>
+    </div>
+</div>
+
+<!-- 步骤指示器 -->
+<div class="steps-indicator">
+    <ol class="steps-list">
+        <li class="step-item completed" id="step1">
+            <div class="step-number">1</div>
+            <div class="step-text">选择活动</div>
+        </li>
+        <li class="step-item" id="step2">
+            <div class="step-number">2</div>
+            <div class="step-text">上传文件</div>
+        </li>
+        <li class="step-item" id="step3">
+            <div class="step-number">3</div>
+            <div class="step-text">字段映射</div>
+        </li>
+        <li class="step-item" id="step4">
+            <div class="step-number">4</div>
+            <div class="step-text">导入数据</div>
+        </li>
+    </ol>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- 活动选择卡片 -->
+        <div class="upload-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--primary-color);">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h5 class="card-title">选择目标活动</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="activitySelect" class="form-label">活动名称</label>
+                    <select id="activitySelect" class="form-select">
+                        <option value="">请选择要导入数据的活动</option>
+                        {% for activity in activities %}
+                        <option value="{{ activity.id }}">{{ activity.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">选择要将获奖数据导入到哪个活动中</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件上传卡片 -->
+        <div class="upload-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--success-color);">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <h5 class="card-title">上传Excel文件</h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" action="/upload" method="post">
+                    <div class="form-group">
+                        <label class="form-label">选择Excel文件</label>
+                        <div class="file-upload-area" onclick="document.getElementById('file').click()">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">点击选择文件或拖拽文件到此处</div>
+                            <div class="upload-hint">支持 .xlsx 格式，文件大小不超过 10MB</div>
+                            <input type="file" class="d-none" id="file" name="file" accept=".xlsx">
+                        </div>
+                        <div class="form-text">请确保Excel文件包含完整的获奖人员信息</div>
+                    </div>
+
+                    <!-- 字段映射部分 -->
+                    <div id="mappingSection" style="display: none;">
+                        <div class="card-header" style="margin: 1.5rem -1.5rem 1rem -1.5rem;">
+                            <div class="card-icon" style="background: var(--info-color);">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <h6 class="card-title">字段映射配置</h6>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            请将Excel表格中的列与系统字段进行对应，未映射的字段将被忽略。
+                        </div>
+                        <div id="mappingFields" class="mapping-grid">
+                            <!-- 映射字段将通过JavaScript动态添加 -->
+                        </div>
+                    </div>
+
+                    <!-- 导入选项 -->
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input class="checkbox-input" type="checkbox" id="overwrite" name="overwrite">
+                            <div>
+                                <label class="checkbox-label" for="overwrite">覆盖已存在的记录</label>
+                                <div class="checkbox-help">如果证书编号已存在，是否更新现有记录。不勾选则跳过重复记录。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="uploadBtn" disabled>
+                            <i class="fas fa-upload"></i>
+                            开始导入数据
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="resetForm()">
+                            <i class="fas fa-redo"></i>
+                            重置
+                        </button>
+                    </div>
+                </form>
+
+                <div id="uploadStatus" class="status-alert"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- 使用说明 -->
+        <div class="upload-card sidebar-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--warning-color);">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h5 class="card-title">使用说明</h5>
+            </div>
+            <div class="card-body">
+                <ol class="help-list">
+                    <li>
+                        <div class="help-number">1</div>
+                        <div>选择要导入数据的目标活动</div>
+                    </li>
+                    <li>
+                        <div class="help-number">2</div>
+                        <div>上传包含获奖信息的Excel文件</div>
+                    </li>
+                    <li>
+                        <div class="help-number">3</div>
+                        <div>配置Excel列与系统字段的对应关系</div>
+                    </li>
+                    <li>
+                        <div class="help-number">4</div>
+                        <div>确认配置后开始导入数据</div>
+                    </li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>提示：</strong>系统会自动识别Excel文件的列名，请确保数据格式正确。
+                </div>
+            </div>
+        </div>
+
+        <!-- 支持的字段 -->
+        <div class="upload-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--gray-600);">
+                    <i class="fas fa-list"></i>
+                </div>
+                <h5 class="card-title">支持的字段</h5>
+            </div>
+            <div class="card-body">
+                <div class="help-list">
+                    <div style="font-size: 0.75rem; color: var(--gray-500); margin-bottom: 0.5rem;">
+                        系统支持以下字段的数据导入：
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; font-size: 0.75rem;">
+                        <div>• 证书编号</div>
+                        <div>• 单位名称</div>
+                        <div>• 所属区域</div>
+                        <div>• 姓名</div>
+                        <div>• 证件类型</div>
+                        <div>• 证件号</div>
+                        <div>• 性别</div>
+                        <div>• 年龄</div>
+                        <div>• 出生日期</div>
+                        <div>• 手机号</div>
+                        <div>• 身份</div>
+                        <div>• 年级专业</div>
+                        <div>• 参赛项目</div>
+                        <div>• 参数组别</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

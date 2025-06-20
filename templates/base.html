@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ activity.title if activity else '证书管理系统' }}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .nav-top {
+            background-color: #0099ff;
+            padding: 10px 0;
+        }
+        .nav-top a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        .activity-header {
+            background: #f5f5f5;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        .activity-title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .activity-meta {
+            color: #666;
+            font-size: 14px;
+        }
+        .header-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            margin-bottom: 2rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if request.endpoint == 'index' %}
+        {% if current_image %}
+        <img src="{{ current_image }}" alt="Header Image" class="header-image">
+        {% endif %}
+    {% endif %}
+    <!-- 顶部导航 -->
+    <div class="nav-top">
+        <div class="container">
+            <a href="/">所有活动</a>
+
+            <a href="/help">使用帮助</a>
+
+        </div>
+    </div>
+
+    {% if activity %}
+    <!-- 活动信息头部 -->
+    <div class="activity-header">
+        <div class="container">
+            <h1 class="activity-title">{{ activity.title }}</h1>
+            <div class="activity-meta">
+                <span>类别：{{ activity.category }}</span>
+                <span class="mx-3">地区：{{ activity.region }}</span>
+                <span>主办单位：{{ activity.publisher }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

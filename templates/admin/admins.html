@@ -1,0 +1,813 @@
+{% extends "admin/base.html" %}
+
+{% block title %}管理员管理 - 后台管理系统{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <i class="fas fa-users-cog text-primary me-2"></i>
+    管理员管理
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-light: #6366f1;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --info-color: #3b82f6;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        --border-radius: 8px;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .main-content {
+        background: var(--gray-50);
+        min-height: 100vh;
+    }
+
+    /* 页面头部 */
+    .page-header {
+        background: white;
+        border-bottom: 1px solid var(--gray-200);
+        padding: 1.5rem 0;
+        margin: -48px -30px 2rem -30px;
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    /* 统计卡片 */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: white;
+    }
+
+    .stat-content h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--gray-900);
+    }
+
+    .stat-content p {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+        margin: 0;
+    }
+
+    /* 工具栏 */
+    .toolbar {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .toolbar-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .toolbar-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    /* 按钮样式 */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-light);
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        background: white;
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-400);
+    }
+
+    .btn-sm {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-icon {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border-radius: 4px;
+        justify-content: center;
+    }
+
+    .btn-success { background: var(--success-color); color: white; }
+    .btn-danger { background: var(--danger-color); color: white; }
+    .btn-warning { background: var(--warning-color); color: white; }
+
+    /* 管理员表格 */
+    .admin-table {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .table-header {
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        padding: 1rem 1.5rem;
+        display: grid;
+        grid-template-columns: 60px 120px 100px 180px 120px 80px 140px 140px 120px;
+        gap: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .admin-item {
+        display: grid;
+        grid-template-columns: 60px 120px 100px 180px 120px 80px 140px 140px 120px;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--gray-100);
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .admin-item:hover {
+        background: var(--gray-50);
+    }
+
+    .admin-item:last-child {
+        border-bottom: none;
+    }
+
+    .admin-id {
+        font-family: monospace;
+        font-size: 0.75rem;
+        color: var(--gray-500);
+    }
+
+    .admin-username {
+        font-weight: 500;
+        color: var(--gray-900);
+    }
+
+    .admin-name {
+        color: var(--gray-700);
+    }
+
+    .admin-contact {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .admin-time {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+    }
+
+    /* 状态徽章 */
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-active {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+    }
+
+    .status-inactive {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger-color);
+    }
+
+    /* 操作按钮组 */
+    .action-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    /* 模态框样式 */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        padding: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        background: var(--gray-50);
+        border-top: 1px solid var(--gray-200);
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        padding: 1rem 1.5rem;
+    }
+
+    /* 表单样式 */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    /* 空状态 */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--gray-500);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    /* 加载状态 */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 2px solid var(--gray-200);
+        border-top: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+        .page-header {
+            margin: -24px -15px 1rem -15px;
+            padding: 1rem 0;
+        }
+
+        .toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+
+        .table-header,
+        .admin-item {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .stats-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1>管理员管理</h1>
+    </div>
+</div>
+
+<!-- 统计面板 -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--primary-color);">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ admins|length }}</h3>
+            <p>管理员总数</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--success-color);">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ admins|selectattr('status', 'equalto', 1)|list|length }}</h3>
+            <p>启用状态</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--danger-color);">
+            <i class="fas fa-user-times"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ admins|selectattr('status', 'equalto', 0)|list|length }}</h3>
+            <p>禁用状态</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--info-color);">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="stat-content">
+            <h3>0</h3>
+            <p>本月新增</p>
+        </div>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+    <h2 class="toolbar-title">管理员列表</h2>
+    <div class="toolbar-actions">
+        <button type="button" class="btn btn-outline" onclick="exportAdmins()">
+            <i class="fas fa-download"></i>
+            导出
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdminModal">
+            <i class="fas fa-plus"></i>
+            添加管理员
+        </button>
+    </div>
+</div>
+
+<!-- 管理员表格 -->
+<div class="admin-table">
+    {% if admins %}
+    <div class="table-header">
+        <div>ID</div>
+        <div>用户名</div>
+        <div>姓名</div>
+        <div>邮箱</div>
+        <div>手机</div>
+        <div>状态</div>
+        <div>最后登录</div>
+        <div>创建时间</div>
+        <div>操作</div>
+    </div>
+
+    {% for admin in admins %}
+    <div class="admin-item">
+        <div class="admin-id">#{{ admin.id }}</div>
+        <div class="admin-username">{{ admin.username }}</div>
+        <div class="admin-name">{{ admin.real_name or '-' }}</div>
+        <div class="admin-contact">{{ admin.email or '-' }}</div>
+        <div class="admin-contact">{{ admin.phone or '-' }}</div>
+        <div>
+            <span class="status-badge {{ 'status-active' if admin.status == 1 else 'status-inactive' }}">
+                <i class="fas {{ 'fa-check-circle' if admin.status == 1 else 'fa-times-circle' }}"></i>
+                {{ '启用' if admin.status == 1 else '禁用' }}
+            </span>
+        </div>
+        <div class="admin-time">
+            {{ admin.last_login_time.strftime('%m/%d %H:%M') if admin.last_login_time else '从未登录' }}
+        </div>
+        <div class="admin-time">{{ admin.create_time.strftime('%m/%d %H:%M') }}</div>
+        <div class="action-buttons">
+            <button type="button" class="btn btn-sm btn-success edit-admin-btn" 
+                    data-id="{{ admin.id }}" title="编辑">
+                <i class="fas fa-edit"></i>
+            </button>
+            {% if admin.username != 'admin' %}
+            <button type="button" class="btn btn-sm btn-danger delete-admin-btn" 
+                    data-id="{{ admin.id }}" title="删除">
+                <i class="fas fa-trash"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-users"></i>
+        <h4>暂无管理员</h4>
+        <p>点击"添加管理员"按钮创建第一个管理员</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 添加管理员模态框 -->
+<div class="modal fade" id="addAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加管理员</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAdminForm">
+                    <div class="form-group">
+                        <label class="form-label">用户名 *</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码 *</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">姓名</label>
+                        <input type="text" class="form-control" name="real_name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">邮箱</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">手机</label>
+                        <input type="tel" class="form-control" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status">
+                            <option value="1">启用</option>
+                            <option value="0">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitAdmin()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑管理员模态框 -->
+<div class="modal fade" id="editAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑管理员</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAdminForm">
+                    <input type="hidden" name="id">
+                    <div class="form-group">
+                        <label class="form-label">用户名 *</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-control" name="password" placeholder="不修改请留空">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">姓名</label>
+                        <input type="text" class="form-control" name="real_name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">邮箱</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">手机</label>
+                        <input type="tel" class="form-control" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status">
+                            <option value="1">启用</option>
+                            <option value="0">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditAdmin()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let isLoading = false;
+
+// 页面初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 事件委托
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.edit-admin-btn')) {
+            const btn = e.target.closest('.edit-admin-btn');
+            editAdmin(btn.dataset.id);
+        }
+        
+        if (e.target.closest('.delete-admin-btn')) {
+            const btn = e.target.closest('.delete-admin-btn');
+            deleteAdmin(btn.dataset.id);
+        }
+    });
+});
+
+// 显示/隐藏加载状态
+function showLoading() {
+    isLoading = true;
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    isLoading = false;
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// 通知系统
+function showNotification(message, type = 'success') {
+    // 创建 toast 通知
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// 导出管理员
+function exportAdmins() {
+    showNotification('导出功能开发中...', 'info');
+}
+
+// 添加管理员
+async function submitAdmin() {
+    if (isLoading) return;
+    
+    const form = document.getElementById('addAdminForm');
+    const formData = new FormData(form);
+    
+    const username = formData.get('username');
+    const password = formData.get('password');
+    
+    if (!username?.trim()) {
+        showNotification('请输入用户名', 'warning');
+        return;
+    }
+    
+    if (!password?.trim()) {
+        showNotification('请输入密码', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/admin/user/add', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        } else {
+            showNotification('管理员添加成功');
+            setTimeout(() => location.reload(), 1000);
+        }
+    } catch (error) {
+        showNotification('添加失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 获取管理员信息
+async function editAdmin(id) {
+    if (isLoading) return;
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/admin/user/${id}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        const form = document.getElementById('editAdminForm');
+        form.id.value = data.id;
+        form.username.value = data.username;
+        form.real_name.value = data.real_name || '';
+        form.email.value = data.email || '';
+        form.phone.value = data.phone || '';
+        form.status.value = data.status;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editAdminModal'));
+        modal.show();
+    } catch (error) {
+        showNotification('加载管理员信息失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 更新管理员信息
+async function submitEditAdmin() {
+    if (isLoading) return;
+    
+    const form = document.getElementById('editAdminForm');
+    const formData = new FormData(form);
+    const id = formData.get('id');
+    
+    const username = formData.get('username');
+    if (!username?.trim()) {
+        showNotification('请输入用户名', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/admin/user/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        } else {
+            showNotification('管理员信息更新成功');
+            setTimeout(() => location.reload(), 1000);
+        }
+    } catch (error) {
+        showNotification('更新失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 删除管理员
+async function deleteAdmin(id) {
+    if (isLoading) return;
+    
+    if (!confirm('确定要删除该管理员吗？此操作不可恢复！')) {
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/admin/user/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        } else {
+            showNotification('管理员删除成功');
+            setTimeout(() => location.reload(), 1000);
+        }
+    } catch (error) {
+        showNotification('删除失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+</script>
+{% endblock %} 

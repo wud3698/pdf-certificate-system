@@ -1,0 +1,110 @@
+{% extends "admin/base.html" %}
+
+{% block title %}站点管理 - 后台管理系统{% endblock %}
+
+{% block page_title %}站点管理{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">首页轮播图设置</h5>
+                </div>
+                <div class="card-body">
+                    {% if carousel_images %}
+                    <div class="mb-4">
+                        <h6>当前轮播图：</h6>
+                        <div class="row">
+                            {% for image in carousel_images %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <img src="{{ image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">排序: {{ image.order }}</small>
+                                            <form action="{{ url_for('admin.delete_carousel_image') }}" method="POST" class="d-inline">
+                                                <input type="hidden" name="image_id" value="{{ image.id }}">
+                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除这张图片吗？')">删除</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form action="{{ url_for('admin.upload_carousel_image') }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="carousel_image" class="form-label">上传新图片</label>
+                            <input type="file" class="form-control" id="carousel_image" name="carousel_image" accept="image/*" required>
+                            <div class="form-text">建议图片尺寸：1920x320 像素，格式：JPG、PNG</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image_order" class="form-label">显示顺序</label>
+                            <input type="number" class="form-control" id="image_order" name="image_order" min="1" value="1">
+                            <div class="form-text">数字越小越靠前显示</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">上传图片</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">使用帮助文档</h5>
+                </div>
+                <div class="card-body">
+                    {% if help_pdf_url %}
+                    <div class="mb-3">
+                        <h6>当前帮助文档：</h6>
+                        <div class="d-flex align-items-center">
+                            <a href="{{ help_pdf_url }}" target="_blank" class="me-3">查看当前文档</a>
+                            <form action="{{ url_for('admin.delete_help_pdf') }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除当前帮助文档吗？')">删除</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form action="{{ url_for('admin.upload_help_pdf') }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="help_pdf" class="form-label">上传新帮助文档</label>
+                            <input type="file" class="form-control" id="help_pdf" name="help_pdf" accept="application/pdf" required>
+                            <div class="form-text">请上传PDF格式文件，大小不超过10MB</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">上传文档</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('carousel_image').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const fileSize = this.files[0].size / 1024 / 1024; // Convert to MB
+        if (fileSize > 5) {
+            alert('图片大小不能超过5MB');
+            this.value = '';
+        }
+    }
+});
+
+document.getElementById('help_pdf').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const fileSize = this.files[0].size / 1024 / 1024; // Convert to MB
+        if (fileSize > 10) {
+            alert('PDF文件大小不能超过10MB');
+            this.value = '';
+        }
+    }
+});
+</script>
+{% endblock %} 

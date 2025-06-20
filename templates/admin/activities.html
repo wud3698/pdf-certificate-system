@@ -1,0 +1,1025 @@
+{% extends "admin/base.html" %}
+
+{% block title %}活动管理 - 后台管理系统{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <i class="fas fa-calendar-alt text-primary me-2"></i>
+    活动管理
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-light: #6366f1;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --info-color: #3b82f6;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        --border-radius: 8px;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .main-content {
+        background: var(--gray-50);
+        min-height: 100vh;
+    }
+
+    /* 简约的页面头部 */
+    .page-header {
+        background: white;
+        border-bottom: 1px solid var(--gray-200);
+        padding: 1.5rem 0;
+        margin: -48px -30px 1.5rem -30px;
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    /* 简约的统计卡片 */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        color: white;
+    }
+
+    .stat-content h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--gray-900);
+    }
+
+    .stat-content p {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+        margin: 0;
+    }
+
+    /* 工具栏 */
+    .toolbar {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .toolbar-top {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .view-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .view-btn {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        background: white;
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+    .view-btn.active,
+    .view-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .bulk-actions {
+        display: none;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .bulk-actions.show {
+        display: flex;
+    }
+
+    /* 搜索栏简化 */
+    .search-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 0.75rem;
+        align-items: end;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .form-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    /* 活动列表 */
+    .activity-list {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+
+    .activity-header {
+        display: grid;
+        grid-template-columns: 40px 80px 2fr 1fr 1fr 1fr 100px 120px;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .sort-btn {
+        background: none;
+        border: none;
+        color: var(--gray-600);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: inherit;
+        font-weight: inherit;
+        text-transform: inherit;
+        padding: 0;
+    }
+
+    .sort-btn:hover {
+        color: var(--primary-color);
+    }
+
+    .activity-item {
+        display: grid;
+        grid-template-columns: 40px 80px 2fr 1fr 1fr 1fr 100px 120px;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .activity-item:hover {
+        background: var(--gray-50);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-image-small {
+        width: 60px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: var(--gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-400);
+    }
+
+    .activity-title {
+        font-weight: 500;
+        color: var(--gray-900);
+        margin: 0;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .activity-meta {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-public {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+    }
+
+    .status-private {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+    }
+
+    /* 操作按钮 */
+    .action-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .btn-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-icon:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-info { background: var(--info-color); color: white; }
+    .btn-warning { background: var(--warning-color); color: white; }
+    .btn-danger { background: var(--danger-color); color: white; }
+
+    /* 分页 */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .pagination-info {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .pagination {
+        display: flex;
+        gap: 0.25rem;
+        margin: 0;
+    }
+
+    .page-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--gray-300);
+        border-radius: 4px;
+        background: white;
+        color: var(--gray-600);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    /* 快速添加按钮 */
+    .quick-add {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: none;
+        color: white;
+        font-size: 1.25rem;
+        box-shadow: var(--shadow-lg);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 1000;
+    }
+
+    .quick-add:hover {
+        background: var(--primary-light);
+        transform: scale(1.1);
+    }
+
+    /* 模态框简化 */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-900);
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+        .search-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .activity-header,
+        .activity-item {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+        
+        .toolbar-top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+
+    /* 空状态 */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--gray-500);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    /* 加载状态 */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+<div class="container-fluid">
+        <h1>活动管理</h1>
+    </div>
+</div>
+
+<!-- 统计面板 -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--primary-color);">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ activities|length }}</h3>
+            <p>总活动数</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--success-color);">
+            <i class="fas fa-eye"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ activities|selectattr('status', 'equalto', '列表公开')|list|length }}</h3>
+            <p>公开活动</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--warning-color);">
+            <i class="fas fa-link"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ activities|selectattr('status', 'equalto', '仅链接可见')|list|length }}</h3>
+            <p>仅链接可见</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--info-color);">
+            <i class="fas fa-plus"></i>
+        </div>
+        <div class="stat-content">
+            <h3>0</h3>
+            <p>本月新增</p>
+        </div>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+    <div class="toolbar-top">
+        <div class="d-flex align-items-center gap-3">
+            <div class="view-controls">
+                <button class="view-btn active" data-view="list">
+                    <i class="fas fa-list me-1"></i> 列表
+                </button>
+                <button class="view-btn" data-view="grid">
+                    <i class="fas fa-th me-1"></i> 网格
+                </button>
+            </div>
+            
+            <div class="bulk-actions" id="bulkActions">
+                <span class="text-sm text-gray-600">已选择 <span id="selectedCount">0</span> 项</span>
+                <button class="btn-icon btn-warning" title="批量编辑状态">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon btn-danger" title="批量删除" onclick="bulkDelete()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <button class="view-btn" onclick="exportActivities()">
+                <i class="fas fa-download me-1"></i> 导出
+            </button>
+            <button class="view-btn" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                <i class="fas fa-plus me-1"></i> 添加活动
+        </button>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <form method="GET" id="searchForm">
+        <div class="search-row">
+            <div class="form-group">
+                <label class="form-label">搜索</label>
+                <input type="text" class="form-control" name="title" placeholder="活动标题..." value="{{ request.args.get('title', '') }}">
+                </div>
+            <div class="form-group">
+                <label class="form-label">类别</label>
+                    <input type="text" class="form-control" name="category" placeholder="类别" value="{{ request.args.get('category', '') }}">
+                </div>
+            <div class="form-group">
+                <label class="form-label">地区</label>
+                    <input type="text" class="form-control" name="region" placeholder="地区" value="{{ request.args.get('region', '') }}">
+                </div>
+            <div class="form-group">
+                <label class="form-label">状态</label>
+                    <select class="form-select" name="status">
+                    <option value="">全部</option>
+                    <option value="列表公开" {% if request.args.get('status') == '列表公开' %}selected{% endif %}>公开</option>
+                    <option value="仅链接可见" {% if request.args.get('status') == '仅链接可见' %}selected{% endif %}>私有</option>
+                    </select>
+                </div>
+            <div class="form-group">
+                <button type="submit" class="view-btn" style="margin-top: 1rem;">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+                </div>
+            </form>
+</div>
+
+<!-- 活动列表 -->
+<div class="activity-list" id="activityList">
+    {% if activities %}
+    <div class="activity-header">
+        <div>
+            <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+        </div>
+        <div>图片</div>
+        <div>
+            <button class="sort-btn" onclick="sortBy('title')">
+                标题 <i class="fas fa-sort"></i>
+            </button>
+        </div>
+        <div>
+            <button class="sort-btn" onclick="sortBy('category')">
+                类别 <i class="fas fa-sort"></i>
+            </button>
+        </div>
+        <div>
+            <button class="sort-btn" onclick="sortBy('region')">
+                地区 <i class="fas fa-sort"></i>
+            </button>
+        </div>
+        <div>
+            <button class="sort-btn" onclick="sortBy('publish_date')">
+                日期 <i class="fas fa-sort"></i>
+            </button>
+        </div>
+        <div>状态</div>
+        <div>操作</div>
+    </div>
+
+                        {% for activity in activities %}
+    <div class="activity-item" data-id="{{ activity.id }}">
+        <div>
+            <input type="checkbox" class="activity-checkbox" value="{{ activity.id }}" onchange="updateBulkActions()">
+        </div>
+        <div>
+                                {% if activity.image_file %}
+            <img src="{{ url_for('main.get_activity_image', activity_id=activity.id) }}" alt="活动图片" class="activity-image-small">
+                                {% else %}
+            <div class="activity-image-small">
+                <i class="fas fa-image"></i>
+            </div>
+            {% endif %}
+        </div>
+        <div>
+            <div class="activity-title">{{ activity.title }}</div>
+            <div class="activity-meta">{{ activity.publisher or '' }}</div>
+        </div>
+        <div class="activity-meta">{{ activity.category or '-' }}</div>
+        <div class="activity-meta">{{ activity.region or '-' }}</div>
+        <div class="activity-meta">{{ activity.publish_date.strftime('%m/%d') }}</div>
+        <div>
+            <span class="status-badge {{ 'status-public' if activity.status == '列表公开' else 'status-private' }}">
+                <i class="fas {{ 'fa-eye' if activity.status == '列表公开' else 'fa-link' }}"></i>
+                {{ '公开' if activity.status == '列表公开' else '私有' }}
+            </span>
+        </div>
+        <div class="action-buttons">
+            <a href="{{ url_for('admin.admin_certificates_by_activity', activity_id=activity.id) }}" 
+               class="btn-icon btn-info" title="证书管理">
+                <i class="fas fa-certificate"></i>
+            </a>
+            <button class="btn-icon btn-warning edit-activity-btn"
+                    data-id="{{ activity.id }}"
+                    data-title="{{ activity.title or '' }}"
+                    data-category="{{ activity.category or '' }}"
+                    data-region="{{ activity.region or '' }}"
+                    data-publisher="{{ activity.publisher or '' }}"
+                    data-status="{{ activity.status or '' }}"
+                    title="编辑">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-danger delete-activity-btn" 
+                    data-id="{{ activity.id }}" title="删除">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- 分页 -->
+    <div class="pagination-wrapper">
+        <div class="pagination-info">
+            显示 1-{{ activities|length }} 共 {{ activities|length }} 项
+        </div>
+        <div class="pagination">
+            <a href="#" class="page-btn">&lt;</a>
+            <a href="#" class="page-btn active">1</a>
+            <a href="#" class="page-btn">&gt;</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times"></i>
+        <h4>暂无活动</h4>
+        <p>点击"添加活动"按钮创建第一个活动</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 快速添加按钮 -->
+<button class="quick-add" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- 简化的添加活动模态框 -->
+<div class="modal fade" id="addActivityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加活动</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addActivityForm">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">活动标题 *</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                        <div class="col-md-6">
+                        <label class="form-label">类别</label>
+                        <input type="text" class="form-control" name="category">
+                    </div>
+                        <div class="col-md-6">
+                        <label class="form-label">地区</label>
+                        <input type="text" class="form-control" name="region">
+                    </div>
+                        <div class="col-12">
+                        <label class="form-label">发布单位</label>
+                        <input type="text" class="form-control" name="publisher">
+                    </div>
+                        <div class="col-md-6">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status">
+                            <option value="列表公开">列表公开</option>
+                            <option value="仅链接可见">仅链接可见</option>
+                        </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">活动图片</label>
+                            <input type="file" class="form-control" name="image" accept="image/*">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitActivity()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑活动模态框 -->
+<div class="modal fade" id="editActivityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑活动</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editActivityForm">
+                    <input type="hidden" name="id">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">活动标题 *</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                        <div class="col-md-6">
+                        <label class="form-label">类别</label>
+                        <input type="text" class="form-control" name="category">
+                    </div>
+                        <div class="col-md-6">
+                        <label class="form-label">地区</label>
+                        <input type="text" class="form-control" name="region">
+                    </div>
+                        <div class="col-12">
+                        <label class="form-label">发布单位</label>
+                        <input type="text" class="form-control" name="publisher">
+                    </div>
+                        <div class="col-md-6">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status">
+                            <option value="列表公开">列表公开</option>
+                            <option value="仅链接可见">仅链接可见</option>
+                        </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">活动图片</label>
+                            <input type="file" class="form-control" name="image" accept="image/*">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditActivity()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let isLoading = false;
+let currentSort = { field: null, direction: 'asc' };
+
+// 页面初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 实时搜索
+    const titleInput = document.querySelector('input[name="title"]');
+    if (titleInput) {
+        let searchTimeout;
+        titleInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 2 || this.value.length === 0) {
+                    document.getElementById('searchForm').submit();
+                }
+            }, 500);
+        });
+    }
+    
+    // 事件委托
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.edit-activity-btn')) {
+            const btn = e.target.closest('.edit-activity-btn');
+            editActivity(btn.dataset.id, btn.dataset.title, btn.dataset.category, 
+                        btn.dataset.region, btn.dataset.publisher, btn.dataset.status);
+        }
+        
+        if (e.target.closest('.delete-activity-btn')) {
+            const btn = e.target.closest('.delete-activity-btn');
+            deleteActivity(btn.dataset.id);
+        }
+        
+        if (e.target.closest('.view-btn[data-view]')) {
+            const btn = e.target.closest('.view-btn[data-view]');
+            switchView(btn.dataset.view);
+        }
+    });
+});
+
+// 显示/隐藏加载状态
+function showLoading() {
+    isLoading = true;
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    isLoading = false;
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// 通知系统
+function showNotification(message, type = 'success') {
+    // 创建 toast 通知
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// 全选/取消全选
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.activity-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateBulkActions();
+}
+
+// 更新批量操作
+function updateBulkActions() {
+    const checked = document.querySelectorAll('.activity-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (checked.length > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = checked.length;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+// 排序
+function sortBy(field) {
+    if (currentSort.field === field) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.field = field;
+        currentSort.direction = 'asc';
+    }
+    
+    // 这里可以添加排序逻辑或重新请求数据
+    showNotification('排序功能开发中...', 'info');
+}
+
+// 切换视图
+function switchView(view) {
+    document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-view="${view}"]`).classList.add('active');
+    
+    if (view === 'grid') {
+        showNotification('网格视图开发中...', 'info');
+    }
+}
+
+// 批量删除
+function bulkDelete() {
+    const checked = document.querySelectorAll('.activity-checkbox:checked');
+    if (checked.length === 0) return;
+    
+    if (confirm(`确定要删除选中的 ${checked.length} 个活动吗？`)) {
+        showNotification('批量删除功能开发中...', 'info');
+    }
+}
+
+// 导出
+function exportActivities() {
+    showNotification('导出功能开发中...', 'info');
+}
+
+// 添加活动
+async function submitActivity() {
+    if (isLoading) return;
+    
+    const form = document.getElementById('addActivityForm');
+    const formData = new FormData(form);
+    
+    const title = formData.get('title');
+    if (!title?.trim()) {
+        showNotification('请输入活动标题', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/admin/activity/add', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification('活动添加成功');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            throw new Error(result.error || '添加失败');
+        }
+    } catch (error) {
+        showNotification('添加失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 编辑活动
+function editActivity(id, title, category, region, publisher, status) {
+    const form = document.getElementById('editActivityForm');
+    form.querySelector('[name="id"]').value = id;
+    form.querySelector('[name="title"]').value = title || '';
+    form.querySelector('[name="category"]').value = category || '';
+    form.querySelector('[name="region"]').value = region || '';
+    form.querySelector('[name="publisher"]').value = publisher || '';
+    form.querySelector('[name="status"]').value = status || '列表公开';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editActivityModal'));
+    modal.show();
+}
+
+async function submitEditActivity() {
+    if (isLoading) return;
+    
+    const form = document.getElementById('editActivityForm');
+    const formData = new FormData(form);
+    const id = formData.get('id');
+    
+    const title = formData.get('title');
+    if (!title?.trim()) {
+        showNotification('请输入活动标题', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/admin/activity/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification('活动更新成功');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            throw new Error(result.error || '更新失败');
+        }
+    } catch (error) {
+        showNotification('更新失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 删除活动
+async function deleteActivity(id) {
+    if (isLoading) return;
+    
+    if (!confirm('确定要删除这个活动吗？')) return;
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/admin/activity/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification('活动删除成功');
+            setTimeout(() => window.location.reload(), 1000);
+        } else if (result.error === 'has_certificates') {
+            showNotification('删除失败：该活动存在关联的证书数据', 'warning');
+        } else {
+            throw new Error(result.error || '删除失败');
+        }
+    } catch (error) {
+        showNotification('删除失败：' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+</script>
+{% endblock %} 

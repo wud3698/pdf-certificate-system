@@ -1,0 +1,354 @@
+{% extends "admin/base.html" %}
+
+{% block title %}证件生成 - 后台管理系统{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <i class="fas fa-certificate text-primary me-2"></i>
+    证件生成
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin/generate.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1>证件生成</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- 活动选择卡片 -->
+        <div class="generate-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--primary-color);">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h5 class="card-title">选择目标活动</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="activitySelect" class="form-label">活动名称</label>
+                    <select id="activitySelect" class="form-select">
+                        <option value="">请选择要生成证件的活动</option>
+                        {% for activity in activities %}
+                        <option value="{{ activity.id }}">{{ activity.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">选择需要生成证件的活动</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模板管理卡片 -->
+        <div class="generate-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--success-color);">
+                    <i class="fas fa-file-word"></i>
+                </div>
+                <h5 class="card-title">证件模板管理</h5>
+            </div>
+            <div class="card-body">
+                <!-- 当前模板显示 -->
+                <div id="currentTemplate" class="current-template d-none">
+                    <div class="template-info">
+                        <div class="template-icon">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+                        <div>
+                            <div class="template-name" id="templateName">当前模板</div>
+                            <div class="form-text">模板已上传，可以开始生成证件</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-danger" id="removeTemplate">
+                        <i class="fas fa-trash"></i>
+                        删除模板
+                    </button>
+                </div>
+
+                <!-- 模板上传区域 -->
+                <div id="uploadTemplate">
+                    <form id="templateForm" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label class="form-label">上传Word模板文件</label>
+                            <div class="file-upload-area" onclick="document.getElementById('template').click()">
+                                <div class="upload-icon">
+                                    <i class="fas fa-file-word"></i>
+                                </div>
+                                <div class="upload-text">点击选择或拖拽Word模板文件</div>
+                                <div class="upload-hint">仅支持 .docx 格式，文件大小不超过 20MB</div>
+                                <input type="file" class="d-none" id="template" name="template" accept=".docx">
+                            </div>
+                            <div class="form-text">请在Word模板中使用 <code>{{字段名}}</code> 格式插入合并字段</div>
+                        </div>
+                        <input type="hidden" name="templateType" value="docx">
+                        <button type="submit" class="btn btn-primary" id="uploadBtn">
+                            <i class="fas fa-upload"></i>
+                            上传模板
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 证书生成卡片 -->
+        <div class="generate-card">
+            <div class="card-header">
+                <div class="card-icon" style="background: var(--warning-color);">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                <h5 class="card-title">证件生成设置</h5>
+            </div>
+            <div class="card-body">
+                <div class="winner-selection">
+                    <!-- 主图片尺寸选择 -->
+                    <div class="form-group">
+                        <label class="form-label">主图片尺寸</label>
+                        <select id="imageSizeSelect" class="form-select">
+                            <option value="one_inch">一寸照 (2.5cm x 3.5cm)</option>
+                            <option value="two_inch">二寸照 (3.5cm x 5.3cm)</option>
+                            <option value="small_two_inch">小二寸 (3.3cm x 4.8cm)</option>
+                            <option value="square_small">正方形小 (2.5cm x 2.5cm)</option>
+                            <option value="square_medium">正方形中 (3.0cm x 3.0cm)</option>
+                            <option value="square_large">正方形大 (4.0cm x 4.0cm)</option>
+                            <option value="custom_small">小尺寸 (2.0cm x 2.8cm)</option>
+                            <option value="custom_medium">中等尺寸 (4.0cm x 5.5cm)</option>
+                            <option value="custom_large">大尺寸 (5.0cm x 7.0cm)</option>
+                            <option value="auto">智能尺寸 (自动计算)</option>
+                        </select>
+                        <div class="form-text">选择证件中主要参赛者照片(image_path)的显示尺寸</div>
+                    </div>
+
+                    <!-- 备用图片尺寸选择 -->
+                    <div class="form-group">
+                        <label class="form-label">备用图片尺寸</label>
+                        <select id="backupImageSizeSelect" class="form-select">
+                            <option value="square_small" selected>正方形小 (2.5cm x 2.5cm)</option>
+                            <option value="square_medium">正方形中 (3.0cm x 3.0cm)</option>
+                            <option value="square_large">正方形大 (4.0cm x 4.0cm)</option>
+                            <option value="one_inch">一寸照 (2.5cm x 3.5cm)</option>
+                            <option value="two_inch">二寸照 (3.5cm x 5.3cm)</option>
+                            <option value="small_two_inch">小二寸 (3.3cm x 4.8cm)</option>
+                            <option value="custom_small">小尺寸 (2.0cm x 2.8cm)</option>
+                            <option value="custom_medium">中等尺寸 (4.0cm x 5.5cm)</option>
+                            <option value="custom_large">大尺寸 (5.0cm x 7.0cm)</option>
+                            <option value="auto">智能尺寸 (自动计算)</option>
+                        </select>
+                        <div class="form-text">选择证件中备用参赛者照片(image_path_backup)的显示尺寸</div>
+                    </div>
+
+                    <!-- 全选选项 -->
+                    <div class="checkbox-group">
+                        <input class="checkbox-input" type="checkbox" id="generate_all" name="generate_all">
+                        <label class="checkbox-label" for="generate_all">
+                            为所有未生成证件的参赛者生成证件
+                        </label>
+                    </div>
+
+                    <!-- 获奖者选择 -->
+                    <div id="winner_selection">
+                        <label class="form-label">选择参赛者</label>
+                        <div class="winners-list" id="winnersContainer">
+                            <!-- 获奖者列表将通过JavaScript动态加载 -->
+                        </div>
+                        <div class="form-text">按住 Ctrl 键可以多选。带有"已生成"标记的选项表示证件已存在，重新生成将覆盖原有证件。</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-primary" id="generateBtn">
+                        <span class="spinner d-none" role="status" aria-hidden="true"></span>
+                        <span class="btn-text">
+                            <i class="fas fa-play"></i>
+                            开始生成证件
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- 可用字段说明 -->
+        <div class="info-panel">
+            <div class="info-section">
+                <div class="info-header">
+                    <i class="fas fa-info-circle" style="color: var(--info-color);"></i>
+                    <h6 class="info-title">基本信息字段</h6>
+                </div>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;cert_number&#125;&#125;</span>
+                        <span>证件编号</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;unit_name&#125;&#125;</span>
+                        <span>单位名称</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;area&#125;&#125;</span>
+                        <span>所属区域</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;name&#125;&#125;</span>
+                        <span>参赛者姓名</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;project&#125;&#125;</span>
+                        <span>参赛项目</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;param_group&#125;&#125;</span>
+                        <span>参数组别</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <div class="info-header">
+                    <i class="fas fa-user" style="color: var(--success-color);"></i>
+                    <h6 class="info-title">个人信息字段</h6>
+                </div>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;id_type&#125;&#125;</span>
+                        <span>证件类型</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;id_number&#125;&#125;</span>
+                        <span>证件号</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;gender&#125;&#125;</span>
+                        <span>性别</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;age&#125;&#125;</span>
+                        <span>年龄</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;birth_date&#125;&#125;</span>
+                        <span>出生日期</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;phone&#125;&#125;</span>
+                        <span>手机号</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;identity&#125;&#125;</span>
+                        <span>身份</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;grade_major&#125;&#125;</span>
+                        <span>年级专业</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <div class="info-header">
+                    <i class="fas fa-image" style="color: var(--warning-color);"></i>
+                    <h6 class="info-title">图片字段</h6>
+                </div>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;image_path&#125;&#125;</span>
+                        <span>参赛者照片（支持多种尺寸）</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-code">&#123;&#123;image_path_backup&#125;&#125;</span>
+                        <span>备用参赛者照片</span>
+                    </li>
+                </ul>
+                
+                <div class="tip-box">
+                    <div class="tip-content">
+                        <strong>使用方法：</strong><br>
+                        在Word模板中使用 <code>{{字段名}}</code> 格式<br>
+                        例如：<code>{{name}}</code>、<code>{{unit_name}}</code><br>
+                        <strong>图片字段：</strong>使用 <code>{{image_path}}</code> 或 <code>{{image_path_backup}}</code> 会直接插入图片到模板中<br>
+                        <strong>主图片尺寸：</strong>可为 <code>{{image_path}}</code> 字段选择显示尺寸，默认为一寸照<br>
+                        <strong>备用图片尺寸：</strong>可为 <code>{{image_path_backup}}</code> 字段单独选择显示尺寸，默认为2.5cm×2.5cm正方形<br>
+                        <strong>独立控制：</strong>两个图片字段可以设置不同的尺寸，满足不同的设计需求
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作说明 -->
+        <div class="info-panel">
+            <div class="info-section">
+                <div class="info-header">
+                    <i class="fas fa-list-ol" style="color: var(--primary-color);"></i>
+                    <h6 class="info-title">操作步骤</h6>
+                </div>
+                <ol class="step-list">
+                    <li class="step-item">
+                        <div class="step-number">1</div>
+                        <div>选择要生成证书的活动</div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-number">2</div>
+                        <div>上传Word证件模板（.docx格式）</div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-number">3</div>
+                        <div>选择需要生成证件的参赛者</div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-number">4</div>
+                        <div>点击"开始生成证件"按钮</div>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="info-section">
+                <div class="info-header">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i>
+                    <h6 class="info-title">注意事项</h6>
+                </div>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <i class="fas fa-dot-circle" style="color: var(--warning-color); font-size: 0.5rem;"></i>
+                        <span>请确保已上传证件模板</span>
+                    </li>
+                    <li class="field-item">
+                        <i class="fas fa-dot-circle" style="color: var(--warning-color); font-size: 0.5rem;"></i>
+                        <span>模板中的字段名必须与系统字段对应</span>
+                    </li>
+                    <li class="field-item">
+                        <i class="fas fa-dot-circle" style="color: var(--warning-color); font-size: 0.5rem;"></i>
+                        <span>已生成的证件重新生成将覆盖原文件</span>
+                    </li>
+                    <li class="field-item">
+                        <i class="fas fa-dot-circle" style="color: var(--warning-color); font-size: 0.5rem;"></i>
+                        <span>可以选择多个参赛者批量生成</span>
+                    </li>
+                    <li class="field-item">
+                        <i class="fas fa-dot-circle" style="color: var(--warning-color); font-size: 0.5rem;"></i>
+                        <span>支持参赛者照片插入，主图片和备用图片可选择不同尺寸</span>
+                    </li>
+                    <li class="field-item">
+                        <i class="fas fa-dot-circle" style="color: var(--warning-color); font-size: 0.5rem;"></i>
+                        <span>主图片默认为一寸照，备用图片默认为2.5cm×2.5cm正方形</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/generate.js') }}"></script>
+{% endblock %} 

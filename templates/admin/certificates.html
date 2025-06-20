@@ -1,0 +1,508 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ activity.title }} - 证件管理 - 后台管理系统{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <i class="fas fa-certificate text-primary me-2"></i>
+    证件管理
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-certificates.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h4 mb-0">{{ activity.title }} - 证件管理</h1>
+            <a href="{{ url_for('admin.admin_activities') }}" class="btn-modern btn-primary-modern">
+                <i class="fas fa-arrow-left"></i> 返回活动列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 活动信息 -->
+<div class="activity-info">
+    <div>
+        <h5 class="mb-1">{{ activity.title }}</h5>
+        <p class="mb-0 opacity-75">{{ activity.publisher or '' }} | {{ activity.region or '' }}</p>
+    </div>
+    <div class="text-end">
+        <div class="fw-bold">{{ activity.publish_date.strftime('%Y年%m月%d日') }}</div>
+        <div class="small">{{ activity.status }}</div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-number">{{ certificates|length }}</div>
+        <div class="stat-label">总证件数</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ certificates|selectattr('certificate_file')|list|length }}</div>
+        <div class="stat-label">已生成</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ certificates|length - certificates|selectattr('certificate_file')|list|length }}</div>
+        <div class="stat-label">待生成</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ pagination.total if pagination else certificates|length }}</div>
+        <div class="stat-label">当前页面</div>
+    </div>
+</div>
+
+<!-- 批量操作提示 -->
+<div class="bulk-actions" id="bulkActions">
+    <div>
+        已选择 <span id="selectedCount">0</span> 项证件
+    </div>
+    <div class="action-group">
+        <button class="btn-modern btn-success-modern" onclick="generateSelectedCertificates()">
+            <i class="fas fa-file-pdf"></i> 生成选中
+        </button>
+        <button class="btn-modern btn-info-modern" onclick="downloadSelectedCertificates()">
+            <i class="fas fa-download"></i> 下载选中
+        </button>
+        <button class="btn-modern btn-danger-modern" onclick="deleteSelectedCertificates()">
+            <i class="fas fa-trash"></i> 删除选中
+        </button>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+    <div class="toolbar-top">
+        <div class="action-group">
+            <button class="btn-modern btn-success-modern" data-bs-toggle="modal" data-bs-target="#addCertificateModal">
+                <i class="fas fa-plus"></i> 添加证件
+            </button>
+            <button class="btn-modern btn-success-modern" onclick="generateAllCertificates()">
+                <i class="fas fa-file-pdf"></i> 生成全部
+            </button>
+            <button class="btn-modern btn-info-modern" onclick="downloadAllCertificates()">
+                <i class="fas fa-download"></i> 下载全部
+            </button>
+        </div>
+        
+        <div class="action-group">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; flex-direction: column; min-width: 150px;">
+                    <label style="font-size: 0.8rem; color: #666; margin-bottom: 2px;">主图片尺寸</label>
+                    <select id="imageSizeSelect" class="form-select" style="font-size: 0.85rem;">
+                        <option value="one_inch">一寸照 (2.5×3.5cm)</option>
+                        <option value="two_inch">二寸照 (3.5×5.3cm)</option>
+                        <option value="small_two_inch">小二寸 (3.3×4.8cm)</option>
+                        <option value="square_small">正方形小 (2.5×2.5cm)</option>
+                        <option value="square_medium">正方形中 (3.0×3.0cm)</option>
+                        <option value="square_large">正方形大 (4.0×4.0cm)</option>
+                        <option value="custom_small">小尺寸 (2.0×2.8cm)</option>
+                        <option value="custom_medium">中等尺寸 (4.0×5.5cm)</option>
+                        <option value="custom_large">大尺寸 (5.0×7.0cm)</option>
+                        <option value="auto">智能尺寸 (自动)</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; min-width: 150px;">
+                    <label style="font-size: 0.8rem; color: #666; margin-bottom: 2px;">备用图片尺寸</label>
+                    <select id="backupImageSizeSelect" class="form-select" style="font-size: 0.85rem;">
+                        <option value="square_small" selected>正方形小 (2.5×2.5cm)</option>
+                        <option value="square_medium">正方形中 (3.0×3.0cm)</option>
+                        <option value="square_large">正方形大 (4.0×4.0cm)</option>
+                        <option value="one_inch">一寸照 (2.5×3.5cm)</option>
+                        <option value="two_inch">二寸照 (3.5×5.3cm)</option>
+                        <option value="small_two_inch">小二寸 (3.3×4.8cm)</option>
+                        <option value="custom_small">小尺寸 (2.0×2.8cm)</option>
+                        <option value="custom_medium">中等尺寸 (4.0×5.5cm)</option>
+                        <option value="custom_large">大尺寸 (5.0×7.0cm)</option>
+                        <option value="auto">智能尺寸 (自动)</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-modern btn-danger-modern" onclick="deleteAllCertificates()">
+                <i class="fas fa-trash-alt"></i> 清空全部
+            </button>
+            <button class="btn-modern btn-warning-modern" onclick="exportCertificates()">
+                <i class="fas fa-file-export"></i> 导出数据
+            </button>
+        </div>
+    </div>
+    
+    <!-- 搜索表单 -->
+    <form method="GET" id="searchForm">
+        <div class="search-grid">
+            <div class="form-group">
+                <label class="form-label">证书编号</label>
+                <input type="text" class="form-control" name="cert_number" value="{{ request.args.get('cert_number', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">姓名</label>
+                <input type="text" class="form-control" name="name" value="{{ request.args.get('name', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">身份证号</label>
+                <input type="text" class="form-control" name="id_number" value="{{ request.args.get('id_number', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">单位</label>
+                <input type="text" class="form-control" name="unit_name" value="{{ request.args.get('unit_name', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">区域</label>
+                <input type="text" class="form-control" name="area" value="{{ request.args.get('area', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">项目</label>
+                <input type="text" class="form-control" name="project" value="{{ request.args.get('project', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">每页</label>
+                <select class="form-select" name="per_page" onchange="this.form.submit()">
+                    <option value="25" {% if request.args.get('per_page', '50') == '25' %}selected{% endif %}>25</option>
+                    <option value="50" {% if request.args.get('per_page', '50') == '50' %}selected{% endif %}>50</option>
+                    <option value="100" {% if request.args.get('per_page', '50') == '100' %}selected{% endif %}>100</option>
+                    <option value="200" {% if request.args.get('per_page', '50') == '200' %}selected{% endif %}>200</option>
+                    <option value="all" {% if request.args.get('per_page', '50') == 'all' %}selected{% endif %}>全部</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn-modern btn-primary-modern w-100">
+                    <i class="fas fa-search"></i> 搜索
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 证书列表 -->
+<div class="cert-table">
+    {% if certificates %}
+    <div class="table-header cert-row">
+        <div>
+            <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+        </div>
+        <div>序号</div>
+        <div>编号</div>
+        <div>参与者信息</div>
+        <div>单位</div>
+        <div>项目</div>
+        <div>状态</div>
+        <div>操作</div>
+    </div>
+    
+    {% for cert in certificates %}
+    <div class="cert-row">
+        <div>
+            <input type="checkbox" class="cert-checkbox" value="{{ cert.id }}" onchange="updateBulkActions()">
+        </div>
+        <div>{{ (pagination.page - 1) * pagination.per_page + loop.index if pagination else loop.index }}</div>
+        <div>
+            <div class="fw-bold">{{ cert.cert_number }}</div>
+        </div>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="d-flex flex-column gap-1">
+                    {% if cert.image_path %}
+                    <div class="d-flex align-items-center gap-1">
+                        <img src="{{ url_for('main.get_participant_image', cert_id=cert.id) }}" class="cert-avatar" alt="主照片">
+                        <small class="text-muted">主</small>
+                    </div>
+                    {% else %}
+                    <div class="d-flex align-items-center gap-1">
+                        <div class="cert-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <small class="text-muted">主</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cert.image_path_backup %}
+                    <div class="d-flex align-items-center gap-1">
+                        <img src="{{ url_for('main.get_participant_backup_image', cert_id=cert.id) }}" class="cert-avatar" alt="备用照片" style="width: 30px; height: 30px;">
+                        <small class="text-muted">备</small>
+                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="cert-name">{{ cert.name }}</div>
+                    <div class="cert-meta">{{ cert.gender or '' }} {{ cert.age or '' }}岁</div>
+                    <div class="cert-meta">{{ cert.phone or '' }}</div>
+                    {% if cert.id_number %}
+                    <div class="cert-meta">身份证：{{ cert.id_number }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="fw-medium">{{ cert.unit_name }}</div>
+            <div class="cert-meta">{{ cert.area or '' }}</div>
+        </div>
+        <div>
+            <div>{{ cert.project or '-' }}</div>
+            <div class="cert-meta">{{ cert.param_group or '' }}</div>
+        </div>
+        <div>
+            {% if cert.certificate_file %}
+            <span class="status-badge status-generated">
+                <i class="fas fa-check"></i> 已生成
+            </span>
+            {% else %}
+            <span class="status-badge status-pending">
+                <i class="fas fa-clock"></i> 待生成
+            </span>
+            {% endif %}
+        </div>
+        <div class="action-buttons">
+            {% if cert.certificate_file %}
+            <a href="{{ url_for('main.preview_certificate', cert_id=cert.id) }}" class="btn-icon btn-primary" target="_blank" title="预览">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="{{ url_for('main.download_certificate', cert_id=cert.id) }}" class="btn-icon btn-success" title="下载">
+                <i class="fas fa-download"></i>
+            </a>
+            {% endif %}
+            <button class="btn-icon btn-success" data-cert-id="{{ cert.id }}" onclick="generateCertificate(this.dataset.certId)" title="生成">
+                <i class="fas fa-file-pdf"></i>
+            </button>
+            <button class="btn-icon btn-warning" data-cert-id="{{ cert.id }}" onclick="editCertificate(this.dataset.certId)" title="编辑">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-danger" data-cert-id="{{ cert.id }}" onclick="deleteCertificate(this.dataset.certId)" title="删除">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- 分页 -->
+    {% if pagination and pagination.pages > 1 %}
+    {% set search_args = request.args.copy() %}
+    {% set _ = search_args.pop('page', None) %}
+    <div class="pagination-wrapper">
+        <div class="pagination-info">
+            显示 {{ (pagination.page - 1) * pagination.per_page + 1 }} - {{ pagination.page * pagination.per_page if pagination.page * pagination.per_page <= pagination.total else pagination.total }} 条，共 {{ pagination.total }} 条
+        </div>
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('admin.admin_certificates_by_activity', activity_id=activity.id, page=pagination.prev_num, **search_args) }}" class="page-btn">&lt;</a>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <a href="{{ url_for('admin.admin_certificates_by_activity', activity_id=activity.id, page=page_num, **search_args) }}" class="page-btn">{{ page_num }}</a>
+                    {% else %}
+                    <span class="page-btn active">{{ page_num }}</span>
+                    {% endif %}
+                {% else %}
+                <span class="page-btn">…</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('admin.admin_certificates_by_activity', activity_id=activity.id, page=pagination.next_num, **search_args) }}" class="page-btn">&gt;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state text-center p-5">
+        <i class="fas fa-certificate text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
+        <h4 class="mt-3">暂无证件数据</h4>
+        <p class="text-muted">点击"添加证件"按钮开始添加参与者信息</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 添加证件模态框 -->
+<div class="modal fade" id="addCertificateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加证件</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCertificateForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">证书编号 *</label>
+                            <input type="text" class="form-control" name="cert_number" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">姓名 *</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">单位名称 *</label>
+                            <input type="text" class="form-control" name="unit_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">所属区域</label>
+                            <input type="text" class="form-control" name="area">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">性别</label>
+                            <select class="form-select" name="gender">
+                                <option value="">请选择</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">年龄</label>
+                            <input type="number" class="form-control" name="age" min="1" max="120">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">手机号码</label>
+                            <input type="text" class="form-control" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">身份证号</label>
+                            <input type="text" class="form-control" name="id_number" maxlength="18">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">参赛项目</label>
+                            <input type="text" class="form-control" name="project">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">组别</label>
+                            <input type="text" class="form-control" name="param_group">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">主要照片</label>
+                            <div class="image-upload-container">
+                                <input type="file" class="form-control" name="participant_image" accept="image/*" onchange="previewImage(this, 'addPreview')">
+                                <div id="addPreview" class="image-preview" style="display: none;">
+                                    <img src="" alt="预览图片" style="border-radius: 6px; border: 1px solid #ddd;">
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeImage('addPreview')">移除图片</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">备用照片</label>
+                            <div class="image-upload-container">
+                                <input type="file" class="form-control" name="participant_image_backup" accept="image/*" onchange="previewImage(this, 'addBackupPreview')">
+                                <div id="addBackupPreview" class="image-preview" style="display: none;">
+                                    <img src="" alt="预览图片" style="border-radius: 6px; border: 1px solid #ddd;">
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeImage('addBackupPreview')">移除图片</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddCertificate()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑证件模态框 -->
+<div class="modal fade" id="editCertificateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑证件</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCertificateForm">
+                    <input type="hidden" name="id">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">证书编号 *</label>
+                            <input type="text" class="form-control" name="cert_number" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">姓名 *</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">单位名称 *</label>
+                            <input type="text" class="form-control" name="unit_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">所属区域</label>
+                            <input type="text" class="form-control" name="area">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">性别</label>
+                            <select class="form-select" name="gender">
+                                <option value="">请选择</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">年龄</label>
+                            <input type="number" class="form-control" name="age" min="1" max="120">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">手机号码</label>
+                            <input type="text" class="form-control" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">身份证号</label>
+                            <input type="text" class="form-control" name="id_number" maxlength="18">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">参赛项目</label>
+                            <input type="text" class="form-control" name="project">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">组别</label>
+                            <input type="text" class="form-control" name="param_group">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">主要照片</label>
+                            <div class="image-upload-container">
+                                <input type="file" class="form-control" name="participant_image" accept="image/*" onchange="previewImage(this, 'editPreview')">
+                                <div id="editPreview" class="image-preview" style="display: none;">
+                                    <img src="" alt="预览图片" style="border-radius: 6px; border: 1px solid #ddd;">
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeImage('editPreview')">移除图片</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">备用照片</label>
+                            <div class="image-upload-container">
+                                <input type="file" class="form-control" name="participant_image_backup" accept="image/*" onchange="previewImage(this, 'editBackupPreview')">
+                                <div id="editBackupPreview" class="image-preview" style="display: none;">
+                                    <img src="" alt="预览图片" style="border-radius: 6px; border: 1px solid #ddd;">
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeImage('editBackupPreview')">移除图片</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditCertificate()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<!-- 隐藏的活动ID数据 -->
+<div data-activity-id="{{ activity.id }}" style="display: none;"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin-certificates.js') }}"></script>
+{% endblock %} 

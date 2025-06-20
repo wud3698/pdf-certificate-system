@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ unit_name }} - 获奖证书</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .nav-top {
+            background-color: #0099ff;
+            padding: 10px 0;
+        }
+        .nav-top a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        .activity-header {
+            background: #f5f5f5;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        .activity-title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .activity-meta {
+            color: #666;
+            font-size: 14px;
+        }
+        .certificate-table {
+            margin-top: 20px;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: normal;
+        }
+        .table td {
+            vertical-align: middle;
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .table td:first-child {
+            max-width: 100px;
+        }
+        .download-btn {
+            padding: 5px 15px;
+            background-color: #f90;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .download-btn:hover {
+            background-color: #f60;
+            color: white;
+        }
+        .batch-download {
+            margin: 20px 0;
+            text-align: right;
+        }
+        .docx-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48IS0tISBGb250IEF3ZXNvbWUgUHJvIDYuNC4wIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlIChDb21tZXJjaWFsIExpY2Vuc2UpIENvcHlyaWdodCAyMDIzIEZvbnRpY29ucywgSW5jLiAtLT48cGF0aCBmaWxsPSIjMDA3MGYzIiBkPSJNMzY1LjMgOTMuMzggbC03NC42OS03NC42OUEzMiAzMiAwIDAgMCAyNTQuNyAwSDQ4QzIxLjQ5IDAgMCAyMS40OSAwIDQ4djQxNmMwIDI2LjUxIDIxLjQ5IDQ4IDQ4IDQ4aDI4OGMyNi41MSAwIDQ4LTIxLjQ5IDQ4LTQ4di0zMzEuM2MwLTguNDgtMy4zNy0xNi42Mi05LjM3LTIyLjYyek0zMzIuNSA2OS4yOGw0NC40NCA0NC40NEgzMzIuNVY2OS4yOHpNNDggNDgwVjMyaDIwOC41djk2YzAgMTMuMjUgMTAuNzUgMjQgMjQgMjRoOTZ2MzI4SDQ4eiIvPjwvc3ZnPg==') no-repeat center center;
+            background-size: contain;
+            vertical-align: middle;
+        }
+        .preview-btn {
+            padding: 5px 15px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .preview-btn:hover {
+            background-color: #218838;
+            color: white;
+            text-decoration: none;
+        }
+        .certificate-preview {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="nav-top">
+        <div class="container">
+            <a href="/">所有活动</a>
+            <a href="/search">搜索查找</a>
+            <a href="/help">使用帮助</a>
+        </div>
+    </div>
+
+    <!-- 活动信息头部 -->
+    <div class="activity-header">
+        <div class="container">
+            <h1 class="activity-title">{{ activity.title }}</h1>
+            <div class="activity-meta">
+                <span>单位：{{ unit_name }}</span>
+                <span class="mx-3">证件数量：{{ certificates|selectattr('certificate_file')|list|length }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 证书列表 -->
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="batch-download">
+                    <a href="{{ url_for('main.download_all_certificates', activity_id=activity.id, unit_name=unit_name) }}" class="btn btn-primary" target="_blank">
+                        打包下载全部证书
+                    </a>
+                </div>
+                <div class="certificate-table">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <!--<th>奖状</th>-->
+                                <th>姓名</th>
+                                <th>组别</th>
+                                <th>项目</th>
+                                <!--<th>手机号</th>-->
+                                <!--<th>分数</th>-->
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cert in certificates %}
+                            {% if cert.certificate_file %}
+                            <tr>
+                                <!-- <td>
+                                    <a href="{{ url_for('main.download_certificate', cert_id=cert.id) }}" style="text-decoration: none;" target="_blank">
+                                        <span class="docx-icon"></span>
+                                    </a>
+                                </td>-->
+                                <td data-bs-toggle="tooltip" title="{{ cert.name }}">{{ cert.name }}</td>
+                                <td data-bs-toggle="tooltip" title="{{ cert.param_group or '-' }}">{{ cert.param_group or '-' }}</td>
+                                <td data-bs-toggle="tooltip" title="{{ cert.project or '-' }}">{{ cert.project or '-' }}</td>
+                                <!--<td data-bs-toggle="tooltip" title="{{ cert.phone or '-' }}">{{ cert.phone or '-' }}</td>-->
+                                <!--<td>{{ cert.score or '-' }}</td>-->
+                                <td>
+                                    <button class="preview-btn" onclick="previewCertificate('{{ cert.id }}')">
+                                        预览
+                                    </button>
+                                    <a href="{{ url_for('main.download_certificate', cert_id=cert.id) }}" class="download-btn" target="_blank">
+                                        下载
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 证书预览模态框 -->
+    <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="previewModalLabel">证书预览</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="previewContent" class="text-center">
+                        <!-- 预览内容将通过 JavaScript 动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 初始化所有的tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        function previewCertificate(certId) {
+            // 显示加载中的提示
+            document.getElementById('previewContent').innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">加载中...</span></div>';
+            
+            // 显示模态框
+            var previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+            previewModal.show();
+
+            // 获取证书预览
+            fetch(`/preview/${certId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('预览生成失败');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('previewContent').innerHTML = `
+                        <embed src="${url}" type="application/pdf" width="100%" height="600px">
+                    `;
+                })
+                .catch(error => {
+                    document.getElementById('previewContent').innerHTML = '<div class="alert alert-danger">加载预览失败</div>';
+                });
+        }
+    </script>
+</body>
+</html> 

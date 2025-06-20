@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">使用帮助</h2>
+    <div class="embed-responsive" style="height: 90vh;">
+        <object data="{{ url_for('static', filename='help.pdf') }}" type="application/pdf" width="100%" height="100%">
+            <p>您的浏览器不支持在线预览PDF，请<a href="{{ url_for('static', filename='help.pdf') }}">下载</a>查看</p>
+        </object>
+    </div>
+</div>
+{% endblock %} 
